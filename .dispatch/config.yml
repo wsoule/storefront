@@ -1,0 +1,58 @@
+statuses: [backlog, todo, in-progress, in-review, done, cancelled]
+autoCommit: true
+
+verifySteps:
+  - name: install
+    command: bun install
+  - name: typecheck
+    command: bun run tsc
+  - name: test
+    command: bun test
+  - name: lint
+    command: bun run lint
+
+orchestrator:
+  epicConcurrency: 3
+  maxTurns: 40
+  verifyTimeoutSec: 600
+  maxBudgetUsd: 5
+  permissionMode: acceptEdits
+
+models:
+  execute: claude-sonnet-5
+  plan: claude-opus-5
+  draft: claude-sonnet-5
+  enrich: claude-sonnet-5
+  cluster: claude-sonnet-5
+  summarize: claude-sonnet-5
+
+fixLoop:
+  cap: 5
+  escalation:
+    - round: 1
+      strategy: resume
+      modelTier: standard
+    - round: 4
+      strategy: fresh
+      modelTier: high
+
+carto:
+  enabled: on
+
+verify:
+  command: bun run src/server/routes.ts
+  url: http://localhost:4000/health
+  notes: Confirm /health returns 200, then check that an exact SKU search beats a fuzzy one and a discount code is checked server-side.
+
+linear:
+  enabled: true
+  teamId: STORE
+  statusMap:
+    backlog: Backlog
+    todo: To Do
+    in-progress: In Progress
+    in-review: In Review
+    done: Shipped
+    cancelled: Canceled
+  intervalSec: 120
+  direction: both
