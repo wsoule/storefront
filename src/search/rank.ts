@@ -10,15 +10,18 @@ export interface Hit {
   score: number;
 }
 
-// Scores every product against the query. Exact SKU matches score the same as
-// fuzzy ones today — task t-58cc03 fixes that on its branch.
+const EXACT_SKU_BOOST = 100;
+
+// An exact SKU match outranks every fuzzy hit — task t-58cc03.
 export function rank(query: string, products: Product[]): Hit[] {
   const terms = tokenize(query);
   const hits: Hit[] = [];
   for (const product of products) {
     const haystack = tokenize(`${product.sku} ${product.title}`);
     const overlap = terms.filter((t) => haystack.includes(t)).length;
-    if (overlap > 0) hits.push({ sku: product.sku, score: overlap });
+    const exact = product.sku.toLowerCase() === query.trim().toLowerCase();
+    const score = overlap + (exact ? EXACT_SKU_BOOST : 0);
+    if (score > 0) hits.push({ sku: product.sku, score });
   }
   return hits.sort((a, b) => b.score - a.score);
 }
